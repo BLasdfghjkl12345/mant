@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多规格图文视频浏览器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        body {
+            background: #ffffff;
+            color: #333;
+            padding-bottom: 120px;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            padding: 15px 16px;
+            z-index: 100;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+            border-bottom: 1px solid #eee;
+        }
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background: #f5f5f5;
+            border-radius: 30px;
+            padding: 10px 18px;
+        }
+        .search-bar input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 15px;
+        }
+        .search-btn {
+            background: #333333;
+            color: #fff;
+            border: none;
+            padding: 7px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .tabs {
+            position: fixed;
+            top: 70px;
+            left: 0;
+            right: 0;
+            background: #fff;
+            display: flex;
+            overflow-x: auto;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            z-index: 99;
+        }
+        .tab-item {
+            flex-shrink: 0;
+            padding: 8px 20px;
+            margin: 0 5px;
+            border-radius: 25px;
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
+        }
+        .tab-item.active {
+            background: #333;
+            color: #fff;
+        }
+
+        .ad-box {
+            margin: 15px 12px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #eee;
+        }
+        .ad-box img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            display: block;
+        }
+        .ad1 { margin-top: 125px; }
+
+        .content {
+            padding: 0 12px;
+        }
+        .section {
+            margin-bottom: 35px;
+        }
+        .section-title {
+            font-size: 17px;
+            font-weight: 600;
+            margin: 10px 0 15px;
+            padding-left: 5px;
+            border-left: 4px solid #333;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .card-size-16-33 {
+            grid-column: span 1;
+        }
+        .card-size-16-33 .inner {
+            width: 100%;
+            height: 330px;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .item-card {
+            background: #f8f8f8;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .item-card img, .item-card video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .item-card p {
+            padding: 8px;
+            font-size: 13px;
+            text-align: center;
+            color: #444;
+        }
+
+        .play-page {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 200;
+            display: none;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .play-close {
+            font-size: 18px;
+            color: #fff;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+        .play-media {
+            width: 100%;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .play-title {
+            font-size: 20px;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        .play-desc {
+            font-size: 15px;
+            color: #ccc;
+            line-height: 1.8;
+        }
+
+        .footer-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+            z-index: 98;
+        }
+        .foot-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+        }
+        .foot-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        .wx { background: #07c160; }
+        .dy { background: #000; }
+        .qq { background: #12b7f5; }
+        .foot-text {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .copyright {
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+            padding: 15px 0 80px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="搜索图片、视频、分类...">
+        <button class="search-btn" onclick="doSearch()">搜索</button>
+    </div>
+</div>
+
+<div class="tabs">
+    <div class="tab-item active">全部</div>
+   
+</div>
+
+<!-- 广告位1 -->
+<div class="ad-box ad1">
+    <img src="16.jpg" alt="广告">
+</div>
+
+<div class="content">
+    <div class="section">
+        <div class="section-title">推荐图文视频</div>
+        <div class="card-grid">
+
+            <!-- 原有图片位置 -->
+            <div class="item-card card-size-16-33" data-type="img" data-src="14.png" data-title="真寻酱" data-desc="绪山真寻（真寻酱）
+ 
+出自漫画/动画《别当欧尼酱了！》，主角，白发金瞳的合法萝莉。
+ 
+👤 基本资料
+ 
+- 本名：绪山真寻（おやま まひろ/Oyama Mahiro）
+- 声优：高野麻里佳
+- 外表年龄：约13岁（初中生），实际约20岁
+- 身高/体重：144cm / 38kg
+- 生日：3月6日（双鱼座）
+- 萌点：性转、家里蹲、白发萝莉、呆毛、宅
+ 
+✨ 人物背景
+ 
+原本是20岁重度家里蹲（自宅警备员），沉迷黄油、两年不出门。被天才妹妹绪山美波里下药，一觉醒来变成可爱白发女孩。从抗拒到习惯，逐渐享受女生生活，女子力越来越高。
+ 
+🧠 性格与日常
+ 
+- 懒、怕麻烦、爱睡懒觉，爱吃肉和香蕉
+- 前期自闭宅，后期开朗，交到枫、椛等好友
+- 日常：和美波里拌嘴、学习女生生活、偶尔变回男身（药效失效）
+ 
+🎬 作品信息
+ 
+- 原作：猫豆腐漫画《别当欧尼酱了！》
+- 动画：2023年1月播出，共12集
+- 核心看点：温馨搞笑的日常+性转后的心理成长">
+                <div class="inner"><img src="14.png"></div>
+                <p>真寻酱</p>
+            </div>
+            <div class="item-card card-size-16-33" data-type="img" data-src="17.jpg" data-title="什么！！！MAN漫剪团出网站了！" data-desc="没错MAN漫剪团确实出网站了你现在所在的网站就是MAN漫剪团的官方网站编号为1235446245">
+                <div class="inner"><img src="17.jpg"></div>
+                <p>什么！！！MAN漫剪团出网站了！</p>
+            </div>
+
+            <!-- 新增15个通用空位 支持图片/视频 -->
+            <div class="item-card card-size-16-33" data-type="img" data-src="19.jpg" data-title="看动漫就选动漫共和国" data-desc="高清资源">
+                <div class="inner"><img src="19.jpg"></div>
+                <p>看动漫就选动漫共和国</p>
+            </div>
+            <div class="item-card card-size-16-33"  data-type="video"   data-src="20.mp4" data-title="更新中"   data-desc="高清资源">
+                <div class="inner"> <video muted playsinline><source src="20.mp4" type="video/mp4"> </video></div>
+                <p>新内容2</p>
+            </div>
+
+            <div class="item-card card-size-16-33" data-type="img" data-src="21.jpg" data-title="新内容4" data-desc="高清资源">
+                <div class="inner"><img src="21.jpg"></div>
+                <p>新内容4</p>
+            </div>
+            <div class="item-card card-size-16-33" data-type="img" data-src="21.jpg" data-title="新内容5" data-desc="高清资源">
+                <div class="inner"><img src="21.jpg"></div>
+                <p>新内容5</p>
+            </div>
+            <div class="item-card card-size-16-33" data-type="img" data-src="21.jpg" data-title="新内容6" data-desc="高清资源">
+                <div class="inner"><img src="21.jpg"></div>
+                <p>新内容6</p>
+            </div>
+            <div class="item-card card-size-16-33" data-type="img" data-src="21.jpg" data-title="新内容7" data-desc="高清资源">
+                <div class="inner"><img src="21.jpg"></div>
+                <p>新内容7</p>
+            </div>
+            <div class="item-card card-size-16-33" data-type="img" data-src="21.jpg" data-title="新内容8" data-desc="高清资源">
+                <div class="inner"><img src="21.jpg"></div>
+                <p>新内容8</p>
+            </div>
+            <div class="item-card card-size-16-33" data-type="img" data-src="21.jpg" data-title="新内容9" data-desc="高清资源">
+                <div class="inner"><img src="21.jpg"></div>
+                <p>新内容9</p>
+            </div>
+            <div class="item-card card-size-16-33" data-type="img" data-src="21.jpg" data-title="新内容10" data-desc="高清资源">
+                <div class="inner"><img src="21.jpg"></div>
+                <p>新内容10</p>
+            </div>
+            <div class="item-card card-size-16-33" data-type="img" data-src="21.jpg" data-title="新内容11" data-desc="高清资源">
+                <div class="inner"><img src="21.jpg"></div>
+                <p>新内容11</p>
+            </div>
+            <div class="item-card card-size-16-33" data-type="img" data-src="21.jpg" data-title="新内容12" data-desc="高清资源">
+                <div class="inner"><img src="21.jpg"></div>
+                <p>新内容12</p>
+            </div>
+            <div class="item-card card-size-16-33" data-type="img" data-src="21.jpg" data-title="新内容13" data-desc="高清资源">
+                <div class="inner"><img src="21.jpg"></div>
+                <p>新内容13</p>
+            </div>
+            <div class="item-card card-size-16-33" data-type="img" data-src="21.jpg" data-title="新内容14" data-desc="高清资源">
+                <div class="inner"><img src="21.jpg"></div>
+                <p>新内容14</p>
+            </div>
+            <div class="item-card card-size-16-33" data-type="img" data-src="21.jpg" data-title="新内容15" data-desc="高清资源">
+                <div class="inner"><img src="21.jpg"></div>
+                <p>新内容15</p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- 广告位2 -->
+<div class="ad-box">
+    <img src="15.jpg" alt="广告">
+</div>
+
+<div class="copyright">
+    Copyright © 2026 MAN漫剪团 版权所有
+</div>
+
+<div class="footer-nav">
+    <div class="foot-item" onclick="jumpWeiXin()">
+        <div class="foot-icon wx">微</div>
+        <div class="foot-text">微信</div>
+    </div>
+    <div class="foot-item" onclick="jumpDouYin()">
+        <div class="foot-icon dy">抖 </div>
+        <div class="foot-text">抖音</div>
+    </div>
+    <div class="foot-item" onclick="jumpQQ()">
+        <div class="foot-icon qq">Q</div>
+        <div class="foot-text">QQ</div>
+    </div>
+</div>
+
+<div class="play-page" id="playPage">
+    <div class="play-close" onclick="closePlay()">← 返回</div>
+    <img class="play-media" id="imgMedia" style="display:none;">
+    <video class="play-media" id="vidMedia" controls style="display:none;"></video>
+    <div class="play-title" id="playTitle"></div>
+    <div class="play-desc" id="playDesc"></div>
+</div>
+
+<!-- 自动背景音乐 一开网页就播放 -->
+<audio id="bgMusic" loop preload="auto" autoplay muted>
+    <source src="music.mp3" type="audio/mpeg">
+
+
+<script>
+const cards = document.querySelectorAll('.item-card');
+const playPage = document.getElementById('playPage');
+const imgMedia = document.getElementById('imgMedia');
+const vidMedia = document.getElementById('vidMedia');
+const playTitle = document.getElementById('playTitle');
+const playDesc = document.getElementById('playDesc');
+
+// 点击卡片 自动识别图片/视频
+cards.forEach(card => {
+    card.onclick = function(){
+        let type = this.dataset.type;
+        let src = this.dataset.src;
+        let title = this.dataset.title;
+        let desc = this.dataset.desc;
+
+        // 重置隐藏
+        imgMedia.style.display = 'none';
+        vidMedia.style.display = 'none';
+
+        if(type === 'img'){
+            imgMedia.src = src;
+            imgMedia.style.display = 'block';
+        }else if(type === 'video'){
+            vidMedia.src = src;
+            vidMedia.style.display = 'block';
+        }
+        playTitle.innerText = title;
+        playDesc.innerText = desc;
+        playPage.style.display = 'block';
+    }
+});
+
+function closePlay(){
+    playPage.style.display = 'none';
+    vidMedia.pause();
+}
+
+function doSearch(){
+    let key = document.getElementById('searchInput').value.trim();
+    if(!key) return;
+    alert('正在搜索：'+key);
+}
+function jumpWeiXin(){window.location.href="weixin://";}
+function jumpDouYin(){window.location.href="douyin://";}
+function jumpQQ(){window.location.href="mqq://";}
+
+// 背景音乐自动播放处理
+const bgMusic = document.getElementById('bgMusic');
+bgMusic.volume = 0.5;
+document.addEventListener('DOMContentLoaded',function(){
+    bgMusic.play();
+    document.body.addEventListener('click',()=>{
+        bgMusic.muted = false;
+        bgMusic.play();
+    },{once:true});
+});
+</script>
+
+</body>
+</html>
+
+<script>
+// 微信按钮：打开 2.jpg 图片
+function jumpWeiXin() {
+    window.open("2.jpg", "_blank");
+}
+
+// 抖音按钮：跳转到你的主页
+function jumpDouYin() {
+    window.location.href = "https://v.douyin.com/pcHYtlU2DiA/";
+}
+
+// QQ按钮：跳转到QQ
+function jumpQQ() {
+    window.location.href = "mqq://";
+}
+</script>
+
+
+// 你的音乐列表，把所有歌曲都放这里
+const musicList = [
+  { title: "歌曲1", src: "music1.mp3" },
+  { title: "歌曲2", src: "music2.mp3" },
+  { title: "歌曲3", src: "music3.mp3" },
+  // 可以继续加更多歌曲
+];
+
+let currentIndex = 0;
+const bgMusic = document.getElementById('bgMusic');
+const musicTitle = document.getElementById('music-title');
+
+// 加载当前歌曲
+function loadMusic(index) {
+  if (musicList.length === 0) return;
+  const music = musicList[index];
+  bgMusic.src = music.src;
+  musicTitle.innerText = `当前歌曲：${music.title}`;
+}
+
+// 上一首
+function prevMusic() {
+  currentIndex = (currentIndex - 1 + musicList.length) % musicList.length;
+  loadMusic(currentIndex);
+  bgMusic.play();
+}
+
+// 下一首
+function nextMusic() {
+  currentIndex = (currentIndex + 1) % musicList.length;
+  loadMusic(currentIndex);
+  bgMusic.play();
+}
+
+// 暂停/播放
+function toggleMusic() {
+  if (bgMusic.paused) {
+    bgMusic.play();
+  } else {
+    bgMusic.pause();
+  }
+}
+
+// 页面加载时自动播放（兼容浏览器限制）
+window.addEventListener('load', () => {
+  if (musicList.length > 0) {
+    loadMusic(0);
+    bgMusic.play();
+  }
+});
+
+// 用户第一次点击页面，解除静音并开始播放
+document.addEventListener('click', () => {
+  bgMusic.muted = false;
+  bgMusic.play();
+}, { once: true });
+
+<!-- 音乐播放器 按钮 -->
+<div style="position:fixed;bottom:80px;left:15px;background:#000;color:#fff;padding:10px;border-radius:10px;z-index:9999;">
+  <div id="nowSong">暂无歌曲</div>
+  <button onclick="prevMusic()">上一首</button>
+  <button onclick="nextMusic()">下一首</button>
+  <button onclick="togglePlay()">播放/暂停</button>
+</div>
+
+<audio id="myAudio" muted preload="auto">
